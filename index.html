@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geolocalización y Video en Pantalla Completa</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="player"></div>
+
+    <script>
+        // Cargar la API de IFrame de YouTube de manera asíncrona
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        // Crear el reproductor de YouTube cuando la API esté lista
+        var player;
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '100%',
+                width: '100%',
+                videoId: 'dQw4w9WgXcQ', // ID del video de YouTube
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 0,
+                    'showinfo': 0,
+                    'modestbranding': 1,
+                    'loop': 1,
+                    'mute': 1,
+                    'playlist': 'dQw4w9WgXcQ' // Necesario para el bucle
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        // Reproducir el video cuando el reproductor esté listo
+        function onPlayerReady(event) {
+            event.target.playVideo();
+        }
+
+        // Volver a reproducir el video cuando termine
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED) {
+                player.playVideo();
+            }
+        }
+
+        // Función para guardar la ubicación (si es necesario)
+        function saveLocation(locationData) {
+            let locations = JSON.parse(localStorage.getItem('locations')) || [];
+
+            // Asegúrate de que si algunos datos están vacíos, se asignen valores predeterminados
+            const location = {
+                ip: locationData.ip || 'Desconocida',
+                city: locationData.city || 'Desconocida',
+                region: locationData.region || 'Desconocida',
+                country: locationData.country || 'Desconocido',
+                loc: locationData.loc || 'Desconocida',
+                timestamp: locationData.timestamp || new Date().toISOString()
+            };
+
+            locations.push(location);
+            localStorage.setItem('locations', JSON.stringify(locations));
+        }
+
+        // Función para obtener la ubicación usando la geolocalización del navegador
+        function getBrowserLocation() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const data = {
+                        ip: 'Desconocida',  // No se obtiene desde el navegador, solo se usa geolocalización
+                        city: 'Desconocida',  // No se obtiene directamente desde la geolocalización
+                        region: 'Desconocida',  // No se obtiene directamente desde la geolocalización
+                        country: 'Desconocido',  // No se obtiene directamente desde la geolocalización
+                        loc: `${position.coords.latitude}, ${position.coords.longitude}`,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    console.log('Ubicación obtenida:', data);
+
+                    // Guardar los datos de ubicación
+                    saveLocation(data);
+
+                    // Mostrar mensaje de éxito
+                    document.getElementById('status').textContent = 'Ubicación guardada correctamente.';
+                }, function(error) {
+                    console.error("Error al obtener ubicación:", error);
+                    document.getElementById('status').textContent = 'Error al obtener la ubicación.';
+                });
+            } else {
+                console.log('La geolocalización no es compatible con este navegador.');
+                document.getElementById('status').textContent = 'Geolocalización no soportada por el navegador.';
+            }
+        }
+
+        // Llamar a la función de geolocalización para obtener la ubicación
+        getBrowserLocation();
+
+    </script>
+    <div id="status"></div>
+</body>
+</html>
